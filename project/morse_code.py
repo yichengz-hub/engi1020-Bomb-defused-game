@@ -13,7 +13,23 @@ class Morsecode:
 
     def start(self):
         words = top_n_list("en", 50000)
-        five_letter_words = [w for w in words if len(w) == 5][:15]
+        five_letter_words = [
+                                "crane",
+                                "blush",
+                                "tiger",
+                                "flint",
+                                "grape",
+                                "swept",
+                                "pride",
+                                "charm",
+                                "doubt",
+                                "knack",
+                                "shard",
+                                "vigor",
+                                "plume",
+                                "truce",
+                                "whale"
+                            ]
 
         self.word = choice(five_letter_words)
         self.decode_str = morse.string_to_morse(self.word)
