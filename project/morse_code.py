@@ -56,8 +56,9 @@ class Morsecode:
 
                     else:
                         buzzer_note(self.buzzer_pin, 2500, 0.1)
-                    await asyncio.sleep(0.5)
-                await asyncio.sleep(1)
+                    await asyncio.sleep(1)
+                await asyncio.sleep(2)
+            await asyncio.sleep(4)
 
     async def player_input(self):
         while len(self.input_seq) < len(self.answer):
@@ -105,3 +106,4 @@ class Morsecode:
             else:
                 print("We LOSE")
                 return "morse lose"
+            

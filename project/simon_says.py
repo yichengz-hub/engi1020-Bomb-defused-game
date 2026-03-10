@@ -132,7 +132,7 @@ class SimonSays():
                         return win_round, strike
                     
 
-    async def game_loop_main():
-        first_round = play() 
+    async def game_loop_main(self):
+        first_round = self.play() 
         pass               
-    
+
