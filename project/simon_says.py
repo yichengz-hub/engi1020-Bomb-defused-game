@@ -74,14 +74,12 @@ class SimonSays():
                 if not test_list == inputted_sequence:
                     # you get a strike if the above condition is true
                     win_round = False
-                    strike = True
-                    return win_round, strike
+                    return win_round
                 
                 elif inputted_sequence == self.colour_sequence:
                     # you win the round, this is the only way to win
                     win_round = True
-                    strike = False
-                    return win_round, strike
+                    return win_round
 
                 if r_input == True:
                     inputted_sequence.append('red')
@@ -127,12 +125,6 @@ class SimonSays():
                         # No strikes, break the loop and start playing the output pattern again
                         break
                     else:
-                        strike = True
+                        # Break out of the function, you failled the round
                         win_round = False
-                        return win_round, strike
-                    
-
-    async def game_loop_main(self):
-        first_round = self.play() 
-        pass               
-
+                        return win_round          
