@@ -15,7 +15,6 @@ class SimonSays():
         self.g_led = g_led
         self.b_led = b_led
 
-
     def start(self):
         self.r_frequency = 252
         self.b_frequency = 415
@@ -25,10 +24,8 @@ class SimonSays():
         self.colour_sequence = []
         self.colours = ['red', 'blue', 'yellow', 'green']
 
-
     async def increase_round(self):
         self.colour_sequence.append(choice(self.colours))
-
 
     async def play(self):
         while True:
@@ -132,7 +129,7 @@ class SimonSays():
                         return win_round, strike
                     
 
-    async def game_loop_main():
-        first_round = play() 
+    async def game_loop_main(self):
+        first_round = self.play() 
         pass               
     

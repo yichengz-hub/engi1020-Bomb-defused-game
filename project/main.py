@@ -9,7 +9,7 @@ timer = Timer((4))
 morse_code = Morsecode(8, 9, 7)
 morse_code.start()
 
-async def loop():
+async def game():
     global morse_code, win, strike, timer
     
     timer_task = asyncio.create_task(timer.strikes())
@@ -33,4 +33,4 @@ async def loop():
         pass
     morse_task.cancel()
 
-asyncio.run(loop())
+asyncio.run(game())
