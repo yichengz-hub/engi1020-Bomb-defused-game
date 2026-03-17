@@ -1,7 +1,7 @@
 import asyncio
 from engi1020.arduino.api import *
 import morse
-from wordfreq import top_n_list
+#from wordfreq import top_n_list
 from random import choice
 
 class Morsecode:
@@ -12,7 +12,7 @@ class Morsecode:
         self.round_over = False
 
     def start(self):
-        words = top_n_list("en", 50000)
+        #words = top_n_list("en", 50000)
         five_letter_words = [
                                 "crane",
                                 "blush",
@@ -30,51 +30,27 @@ class Morsecode:
                                 "truce",
                                 "whale"
                             ]
-        
-        five_letter_words_ans = [
-                                "crane",
-                                "blush",
-                                "tiger",
-                                "flint",
-                                "grape",
-                                "swept",
-                                "pride",
-                                "charm",
-                                "doubt",
-                                "knack",
-                                "shard",
-                                "vigor",
-                                "plume",
-                                "truce",
-                                "whale"
-                            ]
-        
 
-        self.word_show = choice(five_letter_words)
-        self.word_cons = choice(five_letter_words_ans)
-        self.decode_str = morse.string_to_morse(self.word_show)
-        self.decode_str_cons = morse.string_to_morse(self.word_cons)
+        self.word = choice(five_letter_words)
+        self.decode_str = morse.string_to_morse(self.word)
         mapping = {'.': '0', '-': '1'}
 
-        self.seq_show = ["".join(mapping[c] for c in code) for code in self.decode_str]
-        self.show = [int(bit) for code in self.seq_show for bit in code]
-
-        self.seq_cons = ["".join(mapping[c] for c in code) for code in self.decode_str_cons]
-        self.ans = [int(bit) for code in self.seq_cons for bit in code]
+        self.seq = ["".join(mapping[c] for c in code) for code in self.decode_str]
+        self.answer = [int(bit) for code in self.seq for bit in code]
 
 
         self.input_seq = []
         self.round_over = False
-        print(f"DEBUG: Word is '{self.word_show}', Answer should be '{self.word_cons}', Morse sequence: {self.ans}")
+        print(f"DEBUG: Word is '{self.word}', Morse sequence: {self.answer}")
 
     async def play(self):
         while not self.round_over:
-            for beats in self.seq_show:
+            for beats in self.seq:
                 for beat in beats:
                     if self.round_over:
                         buzzer_stop(self.buzzer_pin)
                         return
-
+                    
                     if beat == '1':
                         buzzer_note(self.buzzer_pin, 2500, 0.5)
 
@@ -85,7 +61,7 @@ class Morsecode:
             await asyncio.sleep(4)
 
     async def player_input(self):
-        while len(self.input_seq) < len(self.ans):
+        while len(self.input_seq) < len(self.answer):
             if digital_read(self.btn_pin1):
                 self.input_seq.append(0)
                 print("Button 1 pressed")
@@ -102,14 +78,13 @@ class Morsecode:
     async def win_cond(self):
         while len(self.input_seq) < len(self.answer):
             await asyncio.sleep(0.1)
-
         self.round_over = True
         buzzer_stop(self.buzzer_pin)
-        if self.input_seq == self.ans:
+        if self.input_seq == self.answer:
             buzzer_note(self.buzzer_pin, 3000, 1.5)
             print("Correct!")
             return 1
-
+        
         else:
             buzzer_note(self.buzzer_pin, 1000, 1.5)
             print("Incorrect!")
