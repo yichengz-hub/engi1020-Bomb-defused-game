@@ -4,7 +4,7 @@ from random import choice
 from time import time
 
 class SimonSays():
-    def __init__(self, total_rounds,  buzzer_pin, r_button, y_button, b_button, g_button, r_led, g_led, b_led ):
+    def __init__(self, total_rounds,  buzzer_pin, r_button, y_button, b_button, g_button, r_led, g_led, b_led):
         self.total_rounds = total_rounds
         self.buzzer_pin = buzzer_pin
         self.r_button = r_button
