@@ -16,7 +16,7 @@ class SimonSays():
         self.b_led = b_led
 
 
-    def start(self, initial_round=0, initial_strikes=0, initial_colours=[]):
+    def start(self, initial_round=0, initial_strikes=0, initial_colours=[], max_strikes=3):
         self.r_frequency = 500
         self.y_frequency = 622
         self.b_frequency = 830
@@ -29,11 +29,27 @@ class SimonSays():
         self.strike_time = 0.2
         self.strike_frequency = 100
         self.colour_sequence = initial_colours
+        self.max_strikes = max_strikes
         self.colours = ['red', 'blue', 'yellow', 'green']
+
+        self.mapping = {
+            0: {'red': 'blue', 'blue': 'red', 'green': 'yellow', 'yellow': 'green' },
+            1: {'red': 'yellow', 'blue': 'green', 'green': 'blue', 'yellow': 'red' }, 
+            2: {'red': 'green', 'blue': 'red', 'green': 'yellow', 'yellow': 'blue' },
+        }
+
+        self.matching_colours = [colour for colour in self.mapping[self.strikes].values()]
+        self.input_colour_sequence = [self.mapping[self.strikes][color] for color in self.colour_sequence]
+
+        print(self.matching_colours)
+
+        
 
 
     async def increase_round(self):
-        self.colour_sequence.append(choice(self.colours))
+        index = choice(range(len(self.colours)))
+        self.colour_sequence.append(self.colours[index])
+        self.input_colour_sequence.append(self.matching_colours[index])
         self.current_round += 1
         await asyncio.sleep(0.05)
 
@@ -45,7 +61,7 @@ class SimonSays():
                 print("You win the game!")
                 return 'WIN'
             
-            elif self.strikes >= 3:
+            elif self.strikes >= self.max_strikes:
                 print("You lose the game!")
                 digital_write(self.r_led, True)
                 buzzer_frequency(self.buzzer_pin, self.strike_frequency)
@@ -56,7 +72,9 @@ class SimonSays():
 
             # Check if the round needs to be increased, if it does, add a random colour to the sequence.
             if self.next_round == True:
-                self.colour_sequence.append(choice(self.colours))
+                index = choice(range(len(self.colours)))
+                self.colour_sequence.append(self.colours[index])
+                self.input_colour_sequence.append(self.matching_colours[index])
                 self.current_round += 1
                 self.next_round = False
             
@@ -164,7 +182,7 @@ class SimonSays():
                 while True:
                     # If an element of the inputted sequence is not the same as the colour sequence for the same index,
                     # Then the user gets a strike and the colours play again.
-                    if not inputted_sequence[input_count] == self.colour_sequence[input_count]:
+                    if inputted_sequence[input_count] != self.input_colour_sequence[input_count]:
                         self.strikes += 1
                         print(f"You got a strike, total number is: {self.strikes}")
                         digital_write(self.r_led, True)
@@ -183,7 +201,7 @@ class SimonSays():
                     
                     # If the inputted sequence is exactly the same as the colour sequence,
                     # then the user wins the round and we increase the round number by 1.  
-                    elif inputted_sequence == self.colour_sequence:
+                    elif inputted_sequence == self.input_colour_sequence:
                         self.next_round = True
                         print("Round complete!")
                         break

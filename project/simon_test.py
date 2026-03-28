@@ -1,4 +1,5 @@
 from simon_says import *
+print('test')
 
 async def test():
     oled_clear()
@@ -27,9 +28,7 @@ async def test():
                     print(results)
                     return results
                 
-                round = results[0]
-                strikes = results[1]
-                colour_sequence = results[2]
+                round, strikes, colour_sequence = results
                 break
             await asyncio.sleep(0.1)
 
