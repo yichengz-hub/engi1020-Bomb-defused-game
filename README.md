@@ -14,6 +14,10 @@ yichengz@mun.ca
 Eric Guzzwell
 ejguzzwell@mun.ca
 
+## Donations
+
+If you want to support us, please use link: https://buymeacoffee.com/yichengz
+
 ## Acknowledgments
 
 * Keep Talking and Nobody Explodes
