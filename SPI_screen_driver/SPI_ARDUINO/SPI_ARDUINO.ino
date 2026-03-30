@@ -9,7 +9,6 @@
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
-// Commands
 #define CMD_INIT       'I'
 #define CMD_CLEAR      'C'
 #define CMD_RECT       'R'
@@ -17,19 +16,18 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 #define CMD_TRIANGLE   'G'
 #define CMD_WIRE       'W'
 #define CMD_TEXT       'T'
+#define CMD_READ       'D'
+#define CMD_WRITE      'L'
 
 void setup() {
   Serial.begin(115200);
-  
-  // Initialize for 2.0" Waveshare (240x320)
   tft.init(240, 320, SPI_MODE3); 
-  tft.setRotation(0); // 0 = Portrait Mode
+  tft.setRotation(0); 
   tft.fillScreen(ST77XX_BLACK);
-  
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
-
-  Serial.write('K'); // Ready signal
+  delay(100);
+  Serial.write('K'); 
 }
 
 uint16_t getColor(uint8_t code) {
@@ -39,7 +37,7 @@ uint16_t getColor(uint8_t code) {
     case 2:  return ST77XX_GREEN;
     case 3:  return ST77XX_BLUE;
     case 4:  return ST77XX_YELLOW;
-    case 10: return ST77XX_BLACK; // The "Eraser" for cutting wires
+    case 10: return ST77XX_BLACK; 
     default: return ST77XX_WHITE;
   }
 }
@@ -47,7 +45,6 @@ uint16_t getColor(uint8_t code) {
 void loop() {
   if (Serial.available() > 0) {
     char cmd = Serial.read();
-
     switch(cmd) {
       case CMD_INIT:
         while (Serial.available() < 4);
@@ -55,17 +52,14 @@ void loop() {
           int16_t w = Serial.read() | (Serial.read() << 8);
           int16_t h = Serial.read() | (Serial.read() << 8);
           tft.init(w, h, SPI_MODE3);
-          tft.setRotation(0); // Ensure Portrait on re-init
           tft.fillScreen(ST77XX_BLACK);
           Serial.write('K');
         }
         break;
-
       case CMD_CLEAR:
         tft.fillScreen(ST77XX_BLACK);
         Serial.write('K');
         break;
-
       case CMD_RECT:
       case CMD_WIRE:
         while (Serial.available() < 9);
@@ -79,7 +73,6 @@ void loop() {
           Serial.write('K');
         }
         break;
-
       case CMD_CIRCLE:
         while (Serial.available() < 7);
         {
@@ -91,7 +84,6 @@ void loop() {
           Serial.write('K');
         }
         break;
-
       case CMD_TRIANGLE:
         while (Serial.available() < 13);
         {
@@ -106,7 +98,6 @@ void loop() {
           Serial.write('K');
         }
         break;
-
       case CMD_TEXT:
         while (Serial.available() < 6);
         {
@@ -115,13 +106,11 @@ void loop() {
           uint8_t size = Serial.read();
           uint8_t colorCode = Serial.read();
           uint8_t len = Serial.read();
-          
           char buffer[64] = {0};
           for(int i=0; i<len; i++) {
              while(!Serial.available());
-             buffer[i] = Serial.read();
+             buffer[i] = (char)Serial.read();
           }
-          
           tft.setCursor(x, y);
           tft.setTextColor(getColor(colorCode));
           tft.setTextSize(size);
@@ -129,9 +118,23 @@ void loop() {
           Serial.write('K');
         }
         break;
-
-      default:
-        while (Serial.available() > 0) { Serial.read(); }
+      case CMD_READ:
+        while (Serial.available() < 1);
+        {
+          uint8_t pin = Serial.read();
+          pinMode(pin, INPUT);
+          Serial.write(digitalRead(pin)); 
+        }
+        break;
+      case CMD_WRITE:
+        while (Serial.available() < 2);
+        {
+          uint8_t pin = Serial.read();
+          uint8_t state = Serial.read();
+          pinMode(pin, OUTPUT);
+          digitalWrite(pin, state);
+          Serial.write('K');
+        }
         break;
     }
   }
