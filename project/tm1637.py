@@ -1,42 +1,80 @@
-# tm1637.py - ENGI 1020 Compatible Version
-import time
-from engi1020.arduino.api import digital_write
+from engi1020.arduino.api import *
+
+digits = [
+    0x3f, 0x06, 0x5b, 0x4f,
+    0x66, 0x6d, 0x7d, 0x07,
+    0x7f, 0x6f
+]
+
 
 class TM1637:
-    def __init__(self, clk, dio):
+    def __init__(self, clk, dio, brightness=7):
         self.clk = clk
         self.dio = dio
-        # In engi1020, digital_write handles the setup automatically
-        digital_write(self.clk, 0)
-        digital_write(self.dio, 0)
+        self.brightness = brightness
+        self._set_brightness()
 
-    def _start(self):
-        digital_write(self.dio, 0)
-        digital_write(self.clk, 0)
+    def clk_high(self):
+        digital_write(self.clk, True)
 
-    def _stop(self):
-        digital_write(self.dio, 0)
-        digital_write(self.clk, 1)
-        digital_write(self.dio, 1)
+    def clk_low(self):
+        digital_write(self.clk, False)
 
-    def _write_byte(self, byte):
+    def dio_high(self):
+        digital_write(self.dio, True)
+
+    def dio_low(self):
+        digital_write(self.dio, False)
+
+    def start(self):
+        self.dio_high()
+        self.clk_high()
+        self.dio_low()
+
+    def stop(self):
+        self.clk_low()
+        self.dio_low()
+        self.clk_high()
+        self.dio_high()
+
+    def write_byte(self, b):
         for i in range(8):
-            digital_write(self.clk, 0)
-            digital_write(self.dio, (byte >> i) & 1)
-            digital_write(self.clk, 1)
-        digital_write(self.clk, 0)
-        digital_write(self.dio, 1)
-        digital_write(self.clk, 1)
+            self.clk_low()
 
-    def show_seconds(self, t):
-        """Displays a number up to 9999"""
-        mapping = [0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f]
-        s = str(t).zfill(4)
-        self._start()
-        self._write_byte(0x40) # Command to write data
-        self._stop()
-        self._start()
-        self._write_byte(0xc0) # Address of first digit
-        for char in s:
-            self._write_byte(mapping[int(char)])
-        self._stop()
+            if (b >> i) & 1:
+                self.dio_high()
+            else:
+                self.dio_low()
+
+            self.clk_high()
+
+        # ignore ACK for speed
+        self.clk_low()
+        self.clk_high()
+
+    def _set_brightness(self):
+        self.start()
+        self.write_byte(0x88 | self.brightness)
+        self.stop()
+
+    def write(self, num):
+        num = max(0, min(9999, num))
+
+        d = [0, 0, 0, 0]
+
+        for i in range(4):
+            d[3 - i] = digits[num % 10]
+            num //= 10
+
+        self.start()
+        self.write_byte(0x40)
+        self.stop()
+
+        self.start()
+        self.write_byte(0xC0)
+
+        for seg in d:
+            self.write_byte(seg)
+
+        self.stop()
+        
