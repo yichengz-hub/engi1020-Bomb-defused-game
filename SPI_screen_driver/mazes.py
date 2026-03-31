@@ -1,28 +1,31 @@
 import time
 import random
+import sys
 from LCDDriver import LCDDriver
 
+# --- FIRMWARE COLOR MAPPING ---
+WHITE, RED, GREEN, BLUE, YELLOW, GREY, BLACK = 0, 1, 2, 3, 4, 5, 10
+
 class MazeGame:
-    def __init__(self, port='/dev/tty.usbserial-0001', width=240, height=280):
-        self.lcd = LCDDriver(port, width=width, height=height)
+    def __init__(self, lcd):
+        self.lcd = lcd
         
         # --- COLOR PALETTE ---
-        self.BG_COL = 10     # Black
-        self.DOT_COL = 0     # White
-        self.PLAYER_COL = 1  # Red
-        self.MARKER_COL = 2  # Green
-        self.GOAL_COL = 0    # White (Goal Square)
+        self.BG_COL = BLACK
+        self.DOT_COL = WHITE
+        self.PLAYER_COL = RED
+        self.MARKER_COL = GREEN
+        self.GOAL_COL = WHITE
         
-        self.GRID_STEP = 40
-        self.OFFSET_X, self.OFFSET_Y = 20, 40
-        self.SIZE = 7
+        self.GRID_STEP = 35  # Shrunk slightly to fit text better
+        self.OFFSET_X, self.OFFSET_Y = 30, 50
+        self.SIZE = 6
 
         # Button Pin Mapping
         self.PIN_UP = 2
         self.PIN_DOWN = 3
         self.PIN_LEFT = 4
         self.PIN_RIGHT = 5
-        self.PIN_RESET = 6
 
         self.MAZES = [
             {"id": 1, "markers": [(0,1), (5,2)], "walls": ["h10", "h12", "h13", "h14", "h21", "h23", "h33", "h43", "h42", "h41", "h40", "h50", "h31", "h44", "v01", "v02", "v03", "v15", "v24", "v35", "v44", "v33", "v22", "v21", "v20"]},
@@ -37,9 +40,7 @@ class MazeGame:
         ]
 
         self.state = {"gx": 0, "gy": 0, "tx": 0, "ty": 0, "facing": 'w', "maze": None}
-        self.game_over = False  # Flag to track if the goal was reached
-        self.lcd.init_screen(width, height)
-        self.init_game()
+        self.reset()
 
     def _get_coords(self, tx, ty):
         return self.OFFSET_X + (tx * self.GRID_STEP), self.OFFSET_Y + (ty * self.GRID_STEP)
@@ -65,18 +66,19 @@ class MazeGame:
 
     def _erase_at(self, tx, ty):
         sx, sy = self._get_coords(tx, ty)
-        self.lcd._send_rect(sx-10, sy-10, 20, 20, self.BG_COL)
+        self.lcd._send_rect(sx-10, sy-10, 21, 21, self.BG_COL)
         self.lcd._send_rect(sx-1, sy-1, 2, 2, self.DOT_COL)
         if (tx, ty) in self.state["maze"]['markers']:
             self._draw_marker(tx, ty, self.MARKER_COL)
         if tx == self.state["tx"] and ty == self.state["ty"]:
             self._draw_goal(tx, ty, self.GOAL_COL)
 
-    def init_game(self):
-        self.game_over = False
-        self.lcd.clear()
+    def reset(self):
+        self.lcd.ser.write(b'C') # Clear screen
+        time.sleep(0.1)
         self.state["maze"] = random.choice(self.MAZES)
         
+        # Draw Background Dots
         for ix in range(6):
             for iy in range(6):
                 sx, sy = self._get_coords(ix, iy)
@@ -85,7 +87,8 @@ class MazeGame:
         all_dots = [(x,y) for x in range(6) for y in range(6)]
         self.state["tx"], self.state["ty"] = random.choice(all_dots)
         
-        possible = [d for d in all_dots if (abs(d[0]-self.state["tx"]) + abs(d[1]-self.state["ty"])) >= 4]
+        # Ensure player starts reasonably far from goal
+        possible = [d for d in all_dots if (abs(d[0]-self.state["tx"]) + abs(d[1]-self.state["ty"])) >= 3]
         self.state["gx"], self.state["gy"] = random.choice(possible)
         self.state["facing"] = 'w'
         
@@ -96,19 +99,17 @@ class MazeGame:
         self._draw_player(self.state["gx"], self.state["gy"], self.PLAYER_COL, self.state["facing"])
 
     def move(self, direction):
-        if self.game_over: return  # Ignore movements if game is finished
-
         nx, ny = self.state["gx"], self.state["gy"]
         if direction == 'w': ny -= 1
         elif direction == 's': ny += 1
         elif direction == 'a': nx -= 1
         elif direction == 'd': nx += 1
-        else: return
 
         self.state["facing"] = direction
         is_valid = False
         
         if 0 <= nx <= 5 and 0 <= ny <= 5:
+            # Wall Collision Logic
             wall = f"v{self.state['gx']}{self.state['gy']}" if nx > self.state['gx'] else f"v{nx}{ny}" if nx < self.state['gx'] else f"h{self.state['gx']}{self.state['gy']}" if ny > self.state['gy'] else f"h{nx}{ny}"
             if wall not in self.state["maze"]['walls']:
                 is_valid = True
@@ -117,44 +118,41 @@ class MazeGame:
             self._erase_at(self.state["gx"], self.state["gy"])
             self.state["gx"], self.state["gy"] = nx, ny
             self._draw_player(self.state["gx"], self.state["gy"], self.PLAYER_COL, self.state["facing"])
-            
-            # CHECK FOR WIN CONDITION
-            if self.state["gx"] == self.state["tx"] and self.state["gy"] == self.state["ty"]:
-                self.game_over = True
-                self.lcd.clear()
-                self.lcd.draw_text(40, 100, "SOLVED!", size=4, color=self.MARKER_COL)
-                self.lcd.draw_text(25, 160, "Press Reset to Play", size=2, color=0)
+            return True # Successfully moved
         else:
-            # Re-draw to show orientation change
             self._erase_at(self.state["gx"], self.state["gy"])
             self._draw_player(self.state["gx"], self.state["gy"], self.PLAYER_COL, self.state["facing"])
+            return False
 
     def run(self):
-        """The main execution loop for hardware interaction."""
-        print("Maze Game Running... Press hardware buttons to move.")
-        try:
-            while True:
-                # Check Reset Button (Pin 6)
-                # Note: Pullup means Pressed == 1
-                if self.lcd.digital_read(self.PIN_RESET) == 1:
-                    self.init_game()
-                    time.sleep(0.5)
+        """The main execution loop for hardware interaction. Returns 'win'."""
+        print("Maze Active. Use D-Pad to reach the white square.")
+        last_states = {p: 0 for p in [self.PIN_UP, self.PIN_DOWN, self.PIN_LEFT, self.PIN_RIGHT]}
+        
+        while True:
+            try:
+                # Polling buttons
+                for pin, direction in zip([self.PIN_UP, self.PIN_DOWN, self.PIN_LEFT, self.PIN_RIGHT], ['w', 's', 'a', 'd']):
+                    val = self.lcd.digital_read(pin)
+                    if val == 1 and last_states[pin] == 0:
+                        self.move(direction)
+                        
+                        # Check Win Condition
+                        if self.state["gx"] == self.state["tx"] and self.state["gy"] == self.state["ty"]:
+                            self.lcd.ser.write(b'C')
+                            time.sleep(0.1)
+                            self.lcd._send_text(40, 120, "MAZE SOLVED", 2, GREEN)
+                            time.sleep(1.0)
+                            return "win"
+                            
+                    last_states[pin] = val
+                
+                time.sleep(0.02)
+            except Exception:
+                self.lcd.ser.reset_input_buffer()
 
-                # Check Directional Buttons (Pins 2-5)
-                # Note: Pullup means Pressed == 1
-                if self.lcd.digital_read(self.PIN_UP) == 1:
-                    self.move('w')
-                    time.sleep(0.15)
-                elif self.lcd.digital_read(self.PIN_DOWN) == 1:
-                    self.move('s')
-                    time.sleep(0.15)
-                elif self.lcd.digital_read(self.PIN_LEFT) == 1:
-                    self.move('a')
-                    time.sleep(0.15)
-                elif self.lcd.digital_read(self.PIN_RIGHT) == 1:
-                    self.move('d')
-                    time.sleep(0.15)
-
-                time.sleep(0.01)
-        except KeyboardInterrupt:
-            print("Game Stopped.")
+if __name__ == "__main__":
+    driver = LCDDriver(port='/dev/tty.usbserial-0001')
+    maze = MazeGame(driver)
+    result = maze.run()
+    print(f"Maze result: {result}")

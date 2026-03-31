@@ -37,7 +37,8 @@ uint16_t getColor(uint8_t code) {
     case 2:  return ST77XX_GREEN;
     case 3:  return ST77XX_BLUE;
     case 4:  return ST77XX_YELLOW;
-    case 10: return ST77XX_BLACK; 
+    case 10: return ST77XX_BLACK;
+    case 5:  return 0x7BEF; 
     default: return ST77XX_WHITE;
   }
 }

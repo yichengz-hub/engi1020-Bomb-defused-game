@@ -1,119 +1,132 @@
 import random
 import time
+import sys
 from LCDDriver import LCDDriver
 
 # --- CONFIG ---
 PORT = '/dev/tty.usbserial-0001'
-BTN_CUT = 2
-BTN_NEXT = 3
+BTN_NEXT = 3  
+BTN_CUT = 2   
+
+# --- FIRMWARE COLOR MAPPING ---
+WHITE, RED, GREEN, BLUE, YELLOW, GREY, BLACK = 0, 1, 2, 3, 4, 5, 10
 
 class WiresGame:
     def __init__(self, lcd):
         self.lcd = lcd
-        # Set a very short timeout so we don't hang if an ACK is missed
-        self.lcd.ser.timeout = 0.1 
+        # Force a short timeout so the script CANNOT hang forever
+        self.lcd.ser.timeout = 0.05 
+        print("Game Initialized. Drawing board...")
         self.reset()
 
-    def safe_send(self, cmd, *args):
-        """Replacement for _wait_for_ack that won't hang the game"""
-        self.lcd.ser.write(cmd)
-        for val in args:
-            if isinstance(val, bytes): self.lcd.ser.write(val)
-            elif isinstance(val, int): self.lcd.ser.write(bytes([val]))
+    def get_correct_wire(self, wires):
+        count = len(wires)
+        r, b, y, w, bk = [wires.count(RED), wires.count(BLUE), wires.count(YELLOW), 
+                          wires.count(WHITE), wires.count(BLACK)]
         
-        # Non-blocking ACK check: Wait max 100ms for 'K'
-        start = time.time()
-        while time.time() - start < 0.1:
-            if self.lcd.ser.in_waiting > 0:
-                if self.lcd.ser.read() == b'K':
-                    return True
-        return False # Move on even if we didn't get an ACK
+        if count == 3:
+            if r == 0: return 1
+            if wires[-1] == WHITE: return 2
+            if b > 1: return len(wires) - 1 - wires[::-1].index(BLUE)
+            return 2
+        elif count == 4:
+            if y == 1 and r == 0: return 0
+            if b == 1: return 0
+            if y > 1: return 3
+            return 1
+        elif count == 5:
+            if r == 1 and y > 1: return 0
+            if bk == 0: return 1
+            return 0
+        elif count == 6:
+            if y == 1 and w > 1: return 3
+            if r == 0: return 5
+            return 3
+        return 0
 
     def reset(self):
-        print("\n--- NEW ROUND ---")
-        self.wire_count = random.randint(3, 4)
-        self.wires = [random.choice([2, 3, 4, 5]) for _ in range(self.wire_count)]
-        self.cut_states = [False] * self.wire_count
-        self.selected = 0
-        self.correct = random.randint(0, self.wire_count - 1)
-        self.state = "playing"
-        time.sleep(0.5)
-        self.render()
-
-    def render(self):
-        print(f"Drawing Frame {self.selected}...", end=" ")
-        
-        # 1. Clear buffers to stop the deadlock
         self.lcd.ser.reset_input_buffer()
-        self.lcd.ser.reset_output_buffer()
-        time.sleep(0.05)
-
-        # 2. CLEAR SCREEN (Manual send to avoid the driver's blocking ACK)
-        self.safe_send(b'C')
-
-        # 3. DRAW UI (Using direct calls)
-        # Text: T, x(2), y(2), size(1), color(1), len(1), string
-        self.lcd._send_text(20, 20, "DEFUSE BOMB", 2, 1)
-
+        self.wire_count = random.randint(3, 6)
+        self.wires = [random.choice([RED, BLUE, YELLOW, WHITE, BLACK]) for _ in range(self.wire_count)]
+        self.selected = 0
+        self.correct = self.get_correct_wire(self.wires)
+        
+        # Draw Board
+        self.lcd._send_rect(0, 0, 240, 320, GREY)
+        time.sleep(0.1)
+        self.lcd._send_text(45, 15, "DEFUSE BOMB", 2, BLACK)
+        
         for i in range(self.wire_count):
-            y = 80 + (i * 55)
-            color = self.wires[i]
-            
-            # Wires: R, x(2), y(2), w(2), h(2), color(1)
-            if not self.cut_states[i]:
-                self.lcd._send_rect(60, y, 140, 18, color)
-            else:
-                self.lcd._send_rect(60, y, 40, 18, color)
-                self.lcd._send_rect(160, y, 40, 18, color)
+            y = 70 + (i * 40)
+            self.lcd._send_rect(60, y, 140, 18, self.wires[i])
+            time.sleep(0.04)
+        
+        self.draw_selector(self.selected, WHITE)
+        print(f"Target Wire Index: {self.correct}")
 
-            # Selector: R (Simple square is faster/safer than Triangle)
-            if i == self.selected:
-                self.lcd._send_rect(15, y + 4, 25, 10, 1)
+    def draw_selector(self, index, color):
+        y = 75 + (index * 40)
+        self.lcd._send_rect(15, y, 30, 10, color)
 
-        print("Done.")
-
-    def loop(self):
-        last_next = 0
-        last_cut = 0
+    def run(self):
+        last_n, last_c = 0, 0
+        print("Starting Loop. Polling buttons...")
         
         while True:
-            # 1. Read Inputs
             try:
-                nxt = self.lcd.digital_read(BTN_NEXT)
-                cut = self.lcd.digital_read(BTN_CUT)
-            except:
-                continue
+                # We read pins manually to ensure we don't hang
+                # Read NEXT button
+                self.lcd.ser.reset_input_buffer() # Clear junk
+                self.lcd.ser.write(b'D' + bytes([BTN_NEXT]))
+                n_raw = self.lcd.ser.read(1)
+                n_val = int.from_bytes(n_raw, 'big') if n_raw else last_n
 
-            # 2. Cycle Logic
-            if nxt == 1 and last_next == 0:
-                print("[ACTION] CYCLE")
-                self.selected = (self.selected + 1) % self.wire_count
-                time.sleep(0.1) # Breathe
-                self.render()
-                last_next = 1
-                continue
+                # Read CUT button
+                self.lcd.ser.write(b'D' + bytes([BTN_CUT]))
+                c_raw = self.lcd.ser.read(1)
+                c_val = int.from_bytes(c_raw, 'big') if c_raw else last_c
 
-            # 3. Cut Logic
-            if cut == 1 and last_cut == 0:
-                print("[ACTION] CUT")
-                if self.state == "playing":
-                    self.cut_states[self.selected] = True
-                    self.state = "win" if self.selected == self.correct else "strike"
-                    print(f" >> {self.state.upper()}")
+                # Cycle through wires
+                if n_val == 1 and last_n == 0:
+                    self.draw_selector(self.selected, GREY)
+                    self.selected = (self.selected + 1) % self.wire_count
+                    self.draw_selector(self.selected, WHITE)
+
+                # Cut wire
+                if c_val == 1 and last_c == 0:
+                    if self.selected == self.correct:
+                        self.lcd._send_rect(0, 0, 240, 320, GREEN)
+                        self.lcd._send_text(40, 120, "SAFE!", 3, WHITE)
+                        time.sleep(0.5)
+                        return "win" # EXIT LOOP
+                    else:
+                        self.lcd._send_rect(0, 0, 240, 320, RED)
+                        self.lcd._send_text(40, 120, "BOOM!", 4, WHITE)
+                        time.sleep(1.0)
+                        return "lose" # EXIT LOOP
+
+                last_n, last_c = n_val, c_val
+                time.sleep(0.01)
                 
-                time.sleep(0.1)
-                self.render()
-                last_cut = 1
-                
-                if self.state in ["win", "strike"]:
-                    time.sleep(2)
-                    self.reset()
-                continue
-
-            if nxt == 0: last_next = 0
-            if cut == 0: last_cut = 0
-            time.sleep(0.04)
+            except Exception as e:
+                print(f"Error in loop: {e}")
+                self.lcd.ser.reset_input_buffer()
 
 if __name__ == "__main__":
-    game = WiresGame(LCDDriver(port=PORT))
-    game.loop()
+    try:
+        driver = LCDDriver(port=PORT)
+        game = WiresGame(driver)
+        
+        # 1. Run the game
+        final_result = game.run()
+        
+        # 2. Print result (This MUST execute now)
+        print("\n" + "*"*30)
+        print(f" FINAL STATUS: {final_result.upper()} ")
+        print("*"*30 + "\n")
+        
+    except KeyboardInterrupt:
+        print("\nUser quit the game.")
+    finally:
+        print("Program closed.")
+        sys.exit()

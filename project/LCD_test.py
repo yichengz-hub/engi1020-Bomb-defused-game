@@ -6,11 +6,6 @@ from time import sleep
 rgb_lcd_print("Hello World hello hello hello")
 
 rgb_lcd_print("Bottom Line", row=1, col=0)
-rgq 
-
 
 buzzer_note(13,500,2)
 print('hi')
-
-
-

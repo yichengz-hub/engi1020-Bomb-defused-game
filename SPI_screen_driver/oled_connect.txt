@@ -1,0 +1,14 @@
+LCD Label	Arduino Pin	Function
+VCC	5V or 3.3V	Power (Check your specific Waveshare module)
+GND	GND	Ground
+CS	10	Chip Select
+DC	7	Data/Command Control
+RST	8	Hardware Reset
+BL	9	Backlight (Screen stays black without this!)
+2. The SPI Data Pins (Hardware Fixed)
+
+Since we are using the SPI.h library, these pins are fixed on the Arduino Uno/Nano and cannot be moved to other digital pins.
+
+LCD Label	Arduino Pin	Function
+DIN / MOSI	11	Data Input
+CLK / SCLK	13	Serial Clock
