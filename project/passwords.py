@@ -63,18 +63,16 @@ class Passwords:
 
     def finish_cond(self):
         self.result = "".join([col[0] for col in self.columns])
-        
+
         if self.result == self.word:
             print("CORRECT! Bomb Disarmed.")
             rgb_lcd_clear()
-            return True 
+            return "WIN"
+
         else:
             print(f"WRONG: {self.result.upper()} is not the password.")
             rgb_lcd_clear()
-            
-            time.sleep(1.5)
-            self.lcd_display()
-            return False
+            return "LOSE"
 
 
     def game_loop(self):
@@ -93,15 +91,19 @@ class Passwords:
                 while digital_read(self.column_btn): time.sleep(0.01)
 
             if digital_read(self.submit_btn):
-                if self.finish_cond():
-                    break
-                while digital_read(self.submit_btn): time.sleep(0.01)
+                result = self.finish_cond()
+
+                while digital_read(self.submit_btn):
+                    time.sleep(0.01)
+
+                return result
             
             time.sleep(0.05)
 
 
 if __name__ == '__main__':
+    digital_write(4, True)
+    digital_write(7, False)
     game = Passwords(8,9,10)
     time.sleep(2)
     game.game_loop()
-    

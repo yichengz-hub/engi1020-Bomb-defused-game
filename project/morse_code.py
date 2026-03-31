@@ -164,6 +164,6 @@ class MorseCode:
                         play_task.cancel()
                         self.current_strikes += 1
                         # TODO make the buzzer play a sad sound
-                        return self.current_strikes
+                        return "LOSE"
 
                 await asyncio.sleep(0.1)

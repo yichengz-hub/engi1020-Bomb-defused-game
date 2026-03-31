@@ -101,7 +101,7 @@ class SimonSays():
                 else:
                     print("green")
                     digital_write(self.g_led, True)
-                    buzzer_frequency(self.buzzer_pin, self.g_frequency, self.colour_time)
+                    buzzer_note(self.buzzer_pin, self.g_frequency, self.colour_time)
                     await asyncio.sleep(self.colour_time)
                     digital_write(self.g_led, False)
 
