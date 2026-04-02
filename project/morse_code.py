@@ -202,7 +202,7 @@ class MorseCode:
 
 if __name__ == '__main__':
     async def test():
-        morse = MorseCode(2,3,4)
+        morse = MorseCode(11,12,13)
         morse.start(0)
 
         result = await morse.main()

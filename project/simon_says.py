@@ -45,12 +45,19 @@ class SimonSays():
 
 
     async def wait_for_release(self):
+        # Wait until ALL buttons are released
         while (
-        digital_read(self.r_button) or
-        digital_read(self.b_button) or
-        digital_read(self.y_button) or
-        digital_read(self.g_button) ):
-            await asyncio.sleep(0.05)
+            digital_read(self.r_button) or
+            digital_read(self.b_button) or
+            digital_read(self.y_button) or
+            digital_read(self.g_button)
+        ):
+            await asyncio.sleep(0.02)
+
+        # Extra debounce / settle delay
+        await asyncio.sleep(0.15)
+
+        print("[SIMON] Buttons fully released and settled")
 
 
     async def win_sound(self):
@@ -77,14 +84,12 @@ class SimonSays():
 
 
     async def play(self):
-        while True:
-            # If all rounds are complete, the user wins the game, and the loop ends.
-            if self.current_round > self.total_rounds:
-                print("You win the game!")
-                await self.win_sound()
-                return 'WIN'
-            
-            elif self.strikes >= self.max_strikes:
+        if self.total_rounds <= 0:
+            print("0 or less rounds selected -> auto win")
+            await self.win_sound()
+            return "WIN"
+        while True:     
+            if self.strikes >= self.max_strikes:
                 print("You lose the game!")
                 await self.lose_sound()
                 await asyncio.sleep(0.2)
@@ -138,7 +143,12 @@ class SimonSays():
                 g_input = digital_read(self.g_button)
 
                 # If the user inputs a colour, we then take the future inputs and check if it is the correct sequence.
-                print("Checking input...")
+                print(
+                    f"R={digital_read(self.r_button)} "
+                    f"Y={digital_read(self.y_button)} "
+                    f"B={digital_read(self.b_button)} "
+                    f"G={digital_read(self.g_button)}"
+)
                 if r_input == True:
                     first_input = 'red'
                     print("red inputted")
@@ -195,6 +205,10 @@ class SimonSays():
                 input_count = 0
 
                 print("\nwaiting for future inputs...")
+
+                # Prevent ghost second press from bounce
+                await asyncio.sleep(0.2)
+
                 while True:
                     # If an element of the inputted sequence is not the same as the colour sequence for the same index,
                     # Then the user gets a strike and the colours play again.
@@ -210,6 +224,10 @@ class SimonSays():
                     elif inputted_sequence == self.input_colour_sequence:
                         self.next_round = True
                         print("Round complete!")
+                        if self.current_round >= self.total_rounds:
+                            print("You win the game!")
+                            await self.win_sound()
+                            return "WIN"
                         break
 
                     r_input = digital_read(self.r_button)
@@ -279,7 +297,7 @@ if __name__ == '__main__':
         strikes = 0
         colour_sequence = []
         first_time = True
-        simon_test = SimonSays(3,2,3,4,6,7,8,9,10)
+        simon_test = SimonSays(3,8,9,10,11,12,13,14,15)
 
         while strikes < 3: 
             simon_test.start(initial_round=round, initial_strikes=strikes, initial_colours=colour_sequence)
@@ -305,4 +323,4 @@ if __name__ == '__main__':
                 await asyncio.sleep(0.1)
 
     asyncio.run(test())
-    buzzer_stop(2)
+    buzzer_stop(8)
