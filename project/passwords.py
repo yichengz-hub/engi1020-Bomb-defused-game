@@ -1,6 +1,7 @@
 from engi1020.arduino.api import *
 from random import choice, choices, shuffle
 import time
+import asyncio
 
 class Passwords:
     def __init__(self, cycle_btn, column_btn, submit_btn):
@@ -75,7 +76,7 @@ class Passwords:
             return "LOSE"
 
 
-    def game_loop(self):
+    async def game_loop(self):
         self.lcd_display()
         print(self.word)
         
@@ -99,9 +100,12 @@ class Passwords:
                 return result
             
             time.sleep(0.05)
+            await asyncio.sleep(0.02)
 
 
 if __name__ == '__main__':
-    game = Passwords(2,3,4)
+    digital_write(4, False)
+    digital_write(7, False)
+    game = Passwords(8,9,10)
     time.sleep(2)
     game.game_loop()
