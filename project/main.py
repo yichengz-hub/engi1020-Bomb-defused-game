@@ -145,7 +145,7 @@ async def main():
         print("\n[SYSTEM] Running Simon Says")
         await set_relay(SIMON_RELAY, False)
 
-        simon = SimonSays(4, 8, 9, 10, 11, 12, 13, 14, 15)
+        simon = SimonSays(0, 8, 9, 10, 11, 12, 13, 14, 15)
 
         round_num = 0
         strikes = 0
@@ -154,8 +154,8 @@ async def main():
 
         while strikes < 3:
             if game_state["exploded"]:
-                print("[SYSTEM] 💥 BOOM")
-                await bomb_explode_melody()
+                print("[SYSTEM] BOOM")
+                await bomb_explode_melody() 
                 return
 
             print(f"[SIMON] Round={round_num}, Strikes={strikes}")

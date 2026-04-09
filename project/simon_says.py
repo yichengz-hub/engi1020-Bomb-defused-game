@@ -295,8 +295,8 @@ if __name__ == '__main__':
         oled_clear()
         round = 0
         strikes = 0
-        colour_sequence = []
-        first_time = True
+        colour_sequence = ['blue','yellow', 'green', 'green', 'green',  'green',  'green',  'green',  'green',  'green',  'red']
+        first_time = False
         simon_test = SimonSays(3,8,9,10,11,12,13,14,15)
 
         while strikes < 3: 
