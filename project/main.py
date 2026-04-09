@@ -271,7 +271,7 @@ async def main():
         # )
 
         # if partner_result == LOSE:
-        #     print("[SYSTEM] 💥 BOOM - Partner failed")
+        #     print("[SYSTEM] BOOM - Partner failed")
         #     return
 
         print("\n🎉 CONGRATULATIONS - BOMB DEFUSED 🎉")

@@ -1,7 +1,7 @@
 import time
 import random
 import sys
-from LCDDriver import LCDDriver
+from OLEDDriver import OLEDDriver
 
 # --- FIRMWARE COLOR MAPPING ---
 WHITE, RED, GREEN, BLUE, YELLOW, GREY, BLACK = 0, 1, 2, 3, 4, 5, 10
@@ -152,7 +152,7 @@ class MazeGame:
                 self.lcd.ser.reset_input_buffer()
 
 if __name__ == "__main__":
-    driver = LCDDriver(port='/dev/tty.usbserial-0001')
+    driver = OLEDDriver(port='/dev/tty.usbserial-0001')
 
     maze = MazeGame(driver)
     result = maze.run()

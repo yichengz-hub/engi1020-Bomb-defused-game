@@ -1,5 +1,5 @@
 import time
-from LCDDriver import LCDDriver
+from SPI_screen_driver.OLEDDriver import LCDDriver
 
 def main():
     lcd = LCDDriver(port='/dev/tty.usbserial-0001')

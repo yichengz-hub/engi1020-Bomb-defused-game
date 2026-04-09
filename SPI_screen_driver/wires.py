@@ -1,7 +1,7 @@
 import random
 import time
 import sys
-from LCDDriver import LCDDriver
+from OLEDDriver import OLEDDriver
 
 # --- CONFIG ---
 PORT = '/dev/tty.usbserial-0001'
@@ -119,7 +119,7 @@ class WiresGame:
 
 if __name__ == "__main__":
     try:
-        driver = LCDDriver(port=PORT)
+        driver = OLEDDriver(port=PORT)
         game = WiresGame(driver)
         
         # 1. Run the game

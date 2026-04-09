@@ -1,5 +1,5 @@
 import time, sys
-from LCDDriver import LCDDriver
+from OLEDDriver import OLEDDriver
 from mazes import MazeGame
 from wires import WiresGame
 
@@ -10,7 +10,7 @@ RELAY_PIN  = 6
 
 def main():
     try:
-        driver = LCDDriver()
+        driver = OLEDDriver()
         
         # 1. Start Trigger (Digital)
         print(f"[WAITING] Pulse Pin {SIGNAL_IN} HIGH to start...")

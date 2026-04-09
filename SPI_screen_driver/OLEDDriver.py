@@ -1,7 +1,7 @@
 import serial
 import time
 
-class LCDDriver:
+class OLEDDriver:
     """Python driver for Arduino Waveshare LCD with hardware IO support"""
 
     def __init__(self, port='/dev/tty.usbserial-0001', baudrate=115200, width=240, height=320):
