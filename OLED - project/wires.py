@@ -3,23 +3,19 @@ import random
 import sys
 from OLEDDriver import OLEDDriver
 
-# Color Constants
 WHITE, RED, GREEN, BLUE, YELLOW, GREY, BLACK = 0, 1, 2, 3, 4, 5, 10
 
 class WiresGame:
     def __init__(self, oled):
         self.oled = oled
 
-        # Buttons (Matching your Maze logic pins)
-        self.PIN_NEXT = 3   # Move selection
-        self.PIN_CUT = 2    # Confirm selection
+        self.PIN_NEXT = 3
+        self.PIN_CUT = 2
 
         self.reset()
 
     def get_correct_wire(self, wires):
-        """Standard bomb-defusal logic for wire cutting - Hard Mode."""
         count = len(wires)
-        # Color counts
         r, b, y, w, bk = [wires.count(RED), wires.count(BLUE), wires.count(YELLOW), 
                           wires.count(WHITE), wires.count(BLACK)]
         
@@ -72,14 +68,11 @@ class WiresGame:
         return 0
 
     def draw_selector(self, index, color):
-        """Draws the selection arrow/indicator."""
         y = 75 + (index * 40)
-        # Draws a small rectangle next to the wire
         self.oled._send_rect(15, y, 30, 10, color)
 
     def reset(self):
-        """Clears screen and generates new wires."""
-        self.oled.ser.write(b'C') # Clear screen command
+        self.oled.ser.write(b'C')
         time.sleep(0.1)
         
         self.wire_count = random.randint(3, 6)
@@ -87,11 +80,9 @@ class WiresGame:
         self.selected = 0
         self.correct = self.get_correct_wire(self.wires)
 
-        # Draw Background and Header
         self.oled._send_rect(0, 0, 240, 320, GREY)
         self.oled._send_text(45, 15, "WIRES", 2, BLACK)
         
-        # Draw Wires
         for i in range(self.wire_count):
             y = 70 + (i * 40)
             self.oled._send_rect(60, y, 140, 18, self.wires[i])
@@ -101,24 +92,21 @@ class WiresGame:
         print(f"Target Wire Index: {self.correct}")
 
     def run(self):
-        """Main game loop using the same structure as MazeGame."""
         print("Wires Active. Choose carefully...")
         last_states = {p: 0 for p in [self.PIN_NEXT, self.PIN_CUT]}
         
         while True:
             try:
-                # 1. Check NEXT button (Move selector)
                 val_next = self.oled.digital_read(self.PIN_NEXT)
                 if val_next == 1 and last_states[self.PIN_NEXT] == 0:
-                    self.draw_selector(self.selected, GREY) # Erase old
+                    self.draw_selector(self.selected, GREY)
                     self.selected = (self.selected + 1) % self.wire_count
-                    self.draw_selector(self.selected, WHITE) # Draw new
+                    self.draw_selector(self.selected, WHITE)
                 last_states[self.PIN_NEXT] = val_next
 
-                # 2. Check CUT button (Verify win/loss)
                 val_cut = self.oled.digital_read(self.PIN_CUT)
                 if val_cut == 1 and last_states[self.PIN_CUT] == 0:
-                    self.oled.ser.write(b'C') # Clear screen
+                    self.oled.ser.write(b'C')
                     time.sleep(0.1)
 
                     if self.selected == self.correct:
@@ -132,10 +120,10 @@ class WiresGame:
                         self.oled._send_text(40, 120, "BOOM!", 4, WHITE)
                         time.sleep(1.5)
                         self.oled.ser.reset_input_buffer()
-                        return "loss" # Matching MazeGame "loss" string
+                        return "loss" 
                 last_states[self.PIN_CUT] = val_cut
 
-                time.sleep(0.02) # Fast polling like Maze
+                time.sleep(0.02)
 
             except Exception:
                 self.oled.ser.reset_input_buffer()
