@@ -145,3 +145,4 @@ if __name__ == "__main__":
     game = WiresGame(driver)
     final_result = game.run()
     print(f"Final Wires State: {final_result}")
+    

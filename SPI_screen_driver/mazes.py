@@ -154,3 +154,4 @@ if __name__ == "__main__":
     game = MazeGame(driver)
     final_result = game.run()
     print(f"Final Maze State: {final_result}")
+    

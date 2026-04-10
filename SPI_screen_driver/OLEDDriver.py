@@ -114,3 +114,4 @@ class OLEDDriver:
     def _send_text(self, x, y, text, size, color):
         self.ser.write(b'T'); [self.ser.write(v.to_bytes(2,'little')) for v in [x,y]]
         self.ser.write(bytes([size, color, len(text)])); self.ser.write(text.encode()); self._wait_for_ack()
+        
