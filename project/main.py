@@ -21,9 +21,6 @@ LOSE = "LOSE"
 
 
 # ---------------- HELPERS ----------------
-async def run_password_async(game):
-    return await asyncio.to_thread(game.game_loop)
-
 async def set_relay(pin, state):
     print(f"[RELAY] Pin {pin} -> {'HIGH' if state else 'LOW'}")
     digital_write(pin, state)
