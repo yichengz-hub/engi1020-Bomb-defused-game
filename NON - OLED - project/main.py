@@ -149,13 +149,8 @@ async def main():
         # SIMON SAYS
         # =====================================
         print("\n[SYSTEM] Running Simon Says")
-        await set_relay(SIMON_RELAY, False)
         await initialize_relays()
-        digital_read(9)
-        digital_read(10)
-        digital_read(11)
-        digital_read(12)
-        await asyncio.sleep(0.5)
+        await set_relay(SIMON_RELAY, False)
 
         simon = SimonSays(Simon_rounds, 8, 9, 10, 11, 12, 13, 14, 15)
 
