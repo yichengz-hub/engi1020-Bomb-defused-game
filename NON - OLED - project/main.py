@@ -206,7 +206,7 @@ async def main():
 
         print("\n[SYSTEM] Simon complete") 
         print("[SIMON] Stopping buzzer + clearing pins")
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.5)
         buzzer_stop(8)
         digital_write(8, False)
         digital_write(13, False)
