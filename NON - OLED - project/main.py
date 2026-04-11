@@ -24,21 +24,30 @@ LOSE = "LOSE"
 async def set_relay(pin, state):
     print(f"[RELAY] Pin {pin} -> {'HIGH' if state else 'LOW'}")
     digital_write(pin, state)
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.25)
+
 
 async def bomb_explode_melody():
-    """
-    Sad descending explosion melody on Grove buzzer D5
-    """
     notes = [880, 740, 622, 523, 440, 330]
 
     for note in notes:
         buzzer_note(5, note, 0.25)
         await asyncio.sleep(0.28)
 
-    # final dramatic low tone
     buzzer_note(5, 220, 0.8)
     await asyncio.sleep(0.9)
+
+
+async def bomb_defused_melody():
+    notes = [523, 659, 784, 1047, 784, 1047]
+
+    for note in notes:
+        buzzer_note(5, note, 0.2)
+        await asyncio.sleep(0.22)
+
+    buzzer_note(5, 1319, 0.8)
+    await asyncio.sleep(0.9)
+
 
 async def initialize_relays():
     """
@@ -50,7 +59,7 @@ async def initialize_relays():
     digital_write(SIMON_RELAY, True)
     digital_write(PASSWORD_RELAY, True)
     digital_write(MORSE_RELAY, True)
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.25)
 
 
 async def wait_for_partner_result():
@@ -75,9 +84,9 @@ async def wait_for_partner_result():
     difference = end_time - start_time
     print(difference)
     if difference >= 4:
-        return 'LOSE'
+        return LOSE
     else:
-        return 'WIN'
+        return WIN
 
 
 async def check_explosion(game_state):
@@ -93,23 +102,13 @@ async def run_with_bomb_watch(module_coro, game_state):
 
     while not module_task.done():
         if game_state["game_over"]:
-            print("[SYSTEM] Timer expired -> ending module")
+            print("[SYSTEM] Timer expired, ending module")
             module_task.cancel()
-            return "LOSE"
+            return LOSE
 
         await asyncio.sleep(0.05)
 
     return await module_task
-
-
-async def password_game_async(game):
-    while True:
-        result = game.game_loop()
-
-        if result is not None:
-            return result
-
-        await asyncio.sleep(0.01)
 
 
 async def clear_password_inputs():
@@ -132,18 +131,18 @@ async def clear_password_inputs():
     print("[PASSWORD] Pins clear")
 
 
+
 # ---------------- MAIN GAME ----------------
 async def main():
     game_state = {"game_over": False, "exploded": False}
-    digital_write(16, False)
+    digital_write(PARTNER_SIGNAL, False)
 
     print("[SYSTEM] Select time with potentiometer...")
     timer = Timer(3,3,2,5)
     start_time = await timer.select_time()
-
-    await initialize_relays()
-
     timer_task = asyncio.create_task(timer.run_timer(start_time, game_state))
+
+
 
     try:
         # =====================================
@@ -151,6 +150,7 @@ async def main():
         # =====================================
         print("\n[SYSTEM] Running Simon Says")
         await set_relay(SIMON_RELAY, False)
+        await initialize_relays()
 
         simon = SimonSays(Simon_rounds, 8, 9, 10, 11, 12, 13, 14, 15)
 
@@ -189,6 +189,7 @@ async def main():
 
             if result == LOSE:
                 print("[SIMON] Failed")
+                await bomb_explode_melody()
                 return
 
             round_num, strikes, colour_sequence = result
@@ -201,25 +202,21 @@ async def main():
             await bomb_explode_melody()
             return
 
+        print("\n[SYSTEM] Simon complete") 
+        print("[SIMON] Stopping buzzer + clearing pins")
+        digital_write(8, False)
+        digital_write(13, False)
+        digital_write(14, False)
+        digital_write(15, False)
+
+
+
         # =====================================
         # PASSWORDS
         # =====================================
-        print("\n[SYSTEM] Simon complete")
-        await asyncio.sleep(1)
-
         print("[SYSTEM] Switching to Passwords")
         await set_relay(SIMON_RELAY, True)
         await set_relay(PASSWORD_RELAY, False)
-
-        print("[SYSTEM] Waiting for relay and pins to settle...")
-        await asyncio.sleep(0.5)
-
-        print("[SIMON] Stopping buzzer + clearing pins")
-        buzzer_stop(8)
-        digital_write(8, False)
-        digital_write(9, False)
-        digital_write(10, False)
-
         await clear_password_inputs()
 
         print("\n[SYSTEM] Running Passwords")
@@ -237,6 +234,8 @@ async def main():
 
         print("[PASSWORD] Solved")
 
+
+
         # =====================================
         # MORSE CODE
         # =====================================
@@ -246,6 +245,8 @@ async def main():
 
         digital_write(11, False)
         digital_write(12, False)
+        digital_write(10, False)
+        await asyncio.sleep(0.2)
 
         morse_game = MorseCode(11, 12, 10)
         morse_game.start(0)
@@ -261,6 +262,8 @@ async def main():
             return
 
         print("[MORSE] Solved")
+
+
 
         # =====================================
         # PARTNER BOARD
@@ -279,9 +282,14 @@ async def main():
 
         if partner_result == LOSE:
             print("[SYSTEM] BOOM - Partner failed")
+            await bomb_explode_melody()
             return
 
         print("\n CONGRATULATIONS - BOMB DEFUSED")
+        await bomb_defused_melody()
+        return
+
+
 
     finally:
         print("[SYSTEM] Cleaning up timer task")
@@ -290,6 +298,7 @@ async def main():
             await timer_task
         except asyncio.CancelledError:
             pass
+
 
 
 if __name__ == "__main__":

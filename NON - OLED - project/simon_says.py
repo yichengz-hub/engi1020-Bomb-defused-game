@@ -304,7 +304,7 @@ if __name__ == '__main__':
                         print(results)
                         return results
                     
-                    elif results == 'Lose':
+                    elif results == 'LOSE':
                         print(results)
                         return results
                     
