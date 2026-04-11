@@ -27,10 +27,10 @@ def main():
 
         print(f"[WAITING] Pulse Pin {SIGNAL_IN} HIGH to start...")
         consecutive_highs = 0
-        while consecutive_highs <= 1:
+        while consecutive_highs <= 5:
             if driver.digital_read(SIGNAL_IN):
                 consecutive_highs += 1
-                print(f"Signal detected... ({consecutive_highs}/3)")
+                print(f"Signal detected... ({consecutive_highs}/5)")
             else:
                 consecutive_highs = 0
             time.sleep(0.1)
@@ -70,7 +70,7 @@ def main():
         time.sleep(0.2)
         driver.ser.reset_input_buffer()
         
-        driver.digital_write(RELAY_PIN, 0) 
+        # driver.digital_write(RELAY_PIN, 0) this is a test code, not included 
         time.sleep(0.5) 
 
         if overall_winner:
@@ -79,8 +79,8 @@ def main():
             send_final_signal(driver, RESULT_LED, 5)
 
         print("[IDLE] Game sequence complete. System IDLE.")
-        while True:
-            time.sleep(1)
+        time.sleep(2)
+        sys.exit()
 
     except KeyboardInterrupt:
         print("\nShutdown requested by user.")
