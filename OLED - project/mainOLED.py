@@ -21,22 +21,23 @@ def main():
     try:
         driver = OLEDDriver()
         
-        driver.digital_write(RESULT_LED, 0)
+        
         time.sleep(0.1)
         driver.ser.reset_input_buffer()
 
         print(f"[WAITING] Pulse Pin {SIGNAL_IN} HIGH to start...")
         consecutive_highs = 0
-        while consecutive_highs <= 5:
-            if driver.digital_read(SIGNAL_IN):
+        while consecutive_highs <= 7:
+            if driver.digital_read(SIGNAL_IN) or driver.digital_read(RESULT_LED):
                 consecutive_highs += 1
                 print(f"Signal detected... ({consecutive_highs}/5)")
             else:
                 consecutive_highs = 0
-            time.sleep(0.1)
+            time.sleep(0.02)
 
         print("[START] Valid signal confirmed. Triggering Relay.")
         driver.digital_write(RELAY_PIN, 0) # Activate Relay (Active Low)
+        driver.digital_write(RESULT_LED, 0)
         driver.init_screen(240, 280)
         
         overall_winner = False
