@@ -24,7 +24,7 @@ LOSE = "LOSE"
 async def set_relay(pin, state):
     print(f"[RELAY] Pin {pin} -> {'HIGH' if state else 'LOW'}")
     digital_write(pin, state)
-    await asyncio.sleep(0.25)
+    await asyncio.sleep(0.5)
 
 
 async def bomb_explode_melody():
@@ -59,7 +59,7 @@ async def initialize_relays():
     digital_write(SIMON_RELAY, True)
     digital_write(PASSWORD_RELAY, True)
     digital_write(MORSE_RELAY, True)
-    await asyncio.sleep(0.25)
+    await asyncio.sleep(0.5)
 
 
 async def wait_for_partner_result():
@@ -155,6 +155,7 @@ async def main():
         digital_read(10)
         digital_read(11)
         digital_read(12)
+        await asyncio.sleep(0.5)
 
         simon = SimonSays(Simon_rounds, 8, 9, 10, 11, 12, 13, 14, 15)
 
